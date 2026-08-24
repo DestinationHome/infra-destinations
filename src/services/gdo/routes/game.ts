@@ -1,6 +1,6 @@
+import { apiXml } from "@common/xml";
 import { log } from "@main";
 import type { Context, Hono } from "hono";
-import { apiXml } from "@common/xml";
 import { compressObjectives, compressParts } from "../bitcompressor";
 import { RCR_PUBLISHER_ID } from "../quests";
 import { getUserGameData, getUserObjectives } from "../store";
@@ -17,7 +17,11 @@ export function parseUserGameUrl(rawPath: string) {
 
   if (parts.includes("publisher")) {
     const pIdx = parts.indexOf("publisher");
-    if (pIdx !== -1 && parts[pIdx + 1] && !Number.isNaN(Number(parts[pIdx + 1]))) {
+    if (
+      pIdx !== -1 &&
+      parts[pIdx + 1] &&
+      !Number.isNaN(Number(parts[pIdx + 1]))
+    ) {
       pubId = Number(parts[pIdx + 1]);
     }
   }
@@ -51,7 +55,7 @@ export function parseUserGameUrl(rawPath: string) {
         username = p;
         break;
       }
-      if (p && p.includes("_") && !p.startsWith("heavywater")) {
+      if (p?.includes("_") && !p.startsWith("heavywater")) {
         username = p;
         break;
       }

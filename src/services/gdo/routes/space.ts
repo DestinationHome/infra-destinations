@@ -1,6 +1,6 @@
+import { apiXml } from "@common/xml";
 import { log } from "@main";
 import type { Context, Hono } from "hono";
-import { apiXml } from "@common/xml";
 import { RCR_ALL_QUESTS, RCR_PUBLISHER_ID } from "../quests";
 import { getUserObjectives, getUserSceneStats } from "../store";
 
@@ -69,8 +69,7 @@ export function spaceRoutes(app: Hono) {
         quests_completed: completedQuests.length,
         quests_failed: 0,
         quests_quit: 0,
-        quests:
-          completedQuests.length > 0 ? { quest: completedQuests } : "",
+        quests: completedQuests.length > 0 ? { quest: completedQuests } : "",
       },
     };
 

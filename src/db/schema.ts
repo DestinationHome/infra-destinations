@@ -1,4 +1,9 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 /**
  * Player Quest & Objective progress per publisher.
@@ -37,10 +42,7 @@ export const destinationsUserScenes = sqliteTable(
     updatedAt: integer("updated_at").notNull(),
   },
   (table) => [
-    uniqueIndex("user_scenes_user_space_idx").on(
-      table.username,
-      table.spaceId,
-    ),
+    uniqueIndex("user_scenes_user_space_idx").on(table.username, table.spaceId),
   ],
 );
 

@@ -45,7 +45,11 @@ if (!globalThis.__otel_initialized__) {
     traceExporter: new OTLPTraceExporter(),
     instrumentations: [
       new PinoInstrumentation({
-        logKeys: { traceId: "trace_id", spanId: "span_id", traceFlags: "trace_flags" },
+        logKeys: {
+          traceId: "trace_id",
+          spanId: "span_id",
+          traceFlags: "trace_flags",
+        },
       }),
     ],
   });
@@ -53,5 +57,7 @@ if (!globalThis.__otel_initialized__) {
   sdk.start();
   console.log("OpenTelemetry SDK initialized successfully.");
 } else {
-  console.log("OpenTelemetry SDK already initialized (skipping duplicate setup).");
+  console.log(
+    "OpenTelemetry SDK already initialized (skipping duplicate setup).",
+  );
 }

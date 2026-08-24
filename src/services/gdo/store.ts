@@ -5,10 +5,7 @@ import {
   destinationsUserScenes,
 } from "@db";
 import { and, eq } from "drizzle-orm";
-import type {
-  UserGameRecord,
-  UserSceneStats,
-} from "./types";
+import type { UserGameRecord, UserSceneStats } from "./types";
 
 /**
  * Get a user's completed objectives for a specific publisher.
@@ -115,10 +112,7 @@ export async function saveUserSceneStats(
       updatedAt: now,
     })
     .onConflictDoUpdate({
-      target: [
-        destinationsUserScenes.username,
-        destinationsUserScenes.spaceId,
-      ],
+      target: [destinationsUserScenes.username, destinationsUserScenes.spaceId],
       set: {
         spentDuration,
         timesEntered,
@@ -208,6 +202,9 @@ export async function getAllGameRecords(
 
   return rows.map((r) => ({
     username: r.username,
-    data: typeof r.data === "string" ? JSON.parse(r.data) : (r.data as UserGameRecord) || {},
+    data:
+      typeof r.data === "string"
+        ? JSON.parse(r.data)
+        : (r.data as UserGameRecord) || {},
   }));
 }

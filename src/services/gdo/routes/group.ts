@@ -1,6 +1,6 @@
+import { apiXml } from "@common/xml";
 import { log } from "@main";
 import type { Context, Hono } from "hono";
-import { apiXml } from "@common/xml";
 import { RCR_ALL_QUESTS } from "../quests";
 
 export function groupRoutes(app: Hono) {

@@ -1,6 +1,6 @@
+import { apiXml } from "@common/xml";
 import { log } from "@main";
 import type { Context, Hono } from "hono";
-import { apiXml } from "@common/xml";
 import { RCR_PUBLISHER_ID } from "../quests";
 import { getAllGameRecords } from "../store";
 
