@@ -1,0 +1,13 @@
+services:
+  infra-destinations:
+    image: ghcr.io/destinationhome/infra-destinations:latest
+    container_name: infra-destinations
+    restart: unless-stopped
+    user: "1002:1002"
+    volumes:
+      - /srv/destinationhome/private/destinations/data:/app/data
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://172.17.0.1:4318
+      - PORT=3000
+    ports:
+      - "30088:3000"
