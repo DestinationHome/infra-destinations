@@ -2,21 +2,26 @@ import { log } from "@main";
 import type { Context, Hono } from "hono";
 import { apiXml } from "@common/xml";
 import { RCR_ALL_QUESTS, RCR_PUBLISHER_ID } from "../quests";
-import { getUserData } from "../store";
+import { getUserObjectives, getUserSceneStats } from "../store";
 
 export function spaceRoutes(app: Hono) {
   const handle = async (c: Context) => {
-    // Path: /user/space/{space}/{locale}/{username}
+    // Path format: /user/space/{space}/{locale}/{username}
     const rawPath = c.req.path.replace(/^\/user\/space\/?/, "");
     const parts = rawPath.split("/").filter(Boolean);
     const space = parts[0] || "heavywater_rcrally_game";
     const locale = parts[1] || "en_US";
     const user = parts[2] || parts[parts.length - 1] || "user";
+    const publisherId = Number(RCR_PUBLISHER_ID);
 
-    const u = await getUserData(user);
-    const objKeys = Object.keys(u.objectives || {});
+    const [objectives, sceneStats] = await Promise.all([
+      getUserObjectives(publisherId, user),
+      getUserSceneStats(user, space),
+    ]);
 
-    // All available quests for this publisher
+    const objKeys = Object.keys(objectives);
+
+    // Full quest catalog for this space
     const questsNode = {
       quest: RCR_ALL_QUESTS.map((name, index) => ({
         "@_id": index + 1,
@@ -33,15 +38,11 @@ export function spaceRoutes(app: Hono) {
       })),
     };
 
-    // Completed quests.
-    // FIX: Previously `tasks: ""` (empty string) caused the QuestManager Lua
-    // ProcessUserSpaceData() to find no completed task nodes, so all quests
-    // appeared unstarted on every login despite being stored in the DB.
-    // Each RC Rally quest has exactly one task (id=1); emitting a proper
-    // <tasks><task id="1"><status>c</status></task></tasks> node restores
-    // the task-completion state correctly.
+    // Completed quests with restored task structure
     const completedQuests = objKeys.map((name, i) => {
-      const idx = RCR_ALL_QUESTS.indexOf(name as (typeof RCR_ALL_QUESTS)[number]);
+      const idx = RCR_ALL_QUESTS.indexOf(
+        name as (typeof RCR_ALL_QUESTS)[number],
+      );
       const id = idx !== -1 ? idx + 1 : i + 1;
       return {
         "@_id": id,
@@ -62,7 +63,7 @@ export function spaceRoutes(app: Hono) {
     const publisherQuestsNode = {
       publisher_quest: {
         np_online_id: user,
-        publisher_id: Number(RCR_PUBLISHER_ID),
+        publisher_id: publisherId,
         tasks_completed: completedQuests.length,
         quests_started: 0,
         quests_completed: completedQuests.length,
@@ -82,8 +83,8 @@ export function spaceRoutes(app: Hono) {
         status: "success",
         publishers: {
           publisher: {
-            "@_id": Number(RCR_PUBLISHER_ID),
-            attributes: { id: Number(RCR_PUBLISHER_ID) },
+            "@_id": publisherId,
+            attributes: { id: publisherId },
             groups: "",
             quests: questsNode,
           },
@@ -93,13 +94,13 @@ export function spaceRoutes(app: Hono) {
             np_online_id: user,
             create_timestamp: "2020.01.01 00:00:00",
             locale,
-            spent_duration: 0,
+            spent_duration: sceneStats.spentDuration,
             scenes: {
               scene: {
                 "@_id": space,
                 attributes: { id: space },
-                spent_duration: 0,
-                times_entered: 0,
+                spent_duration: sceneStats.spentDuration,
+                times_entered: sceneStats.timesEntered,
               },
             },
           },

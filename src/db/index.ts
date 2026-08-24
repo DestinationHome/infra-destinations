@@ -10,17 +10,44 @@ mkdirSync(dirname(dbPath), { recursive: true });
 
 const sqlite = new Database(dbPath);
 
-// Ensure the rcrally_users table exists (created by game-heavywater, but we
-// create it here too so infra-destinations can run standalone if needed).
+// Initialize publisher-agnostic Destinations tables
 sqlite.run(`
-  CREATE TABLE IF NOT EXISTS rcrally_users (
-    username TEXT PRIMARY KEY,
-    times TEXT,
-    parts TEXT,
+  CREATE TABLE IF NOT EXISTS destinations_user_quests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    publisher_id INTEGER NOT NULL,
+    username TEXT NOT NULL,
     objectives TEXT,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   );
+  CREATE UNIQUE INDEX IF NOT EXISTS user_quests_pub_user_idx
+    ON destinations_user_quests(publisher_id, username);
+`);
+
+sqlite.run(`
+  CREATE TABLE IF NOT EXISTS destinations_user_scenes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    space_id TEXT NOT NULL,
+    spent_duration INTEGER NOT NULL DEFAULT 0,
+    times_entered INTEGER NOT NULL DEFAULT 1,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS user_scenes_user_space_idx
+    ON destinations_user_scenes(username, space_id);
+`);
+
+sqlite.run(`
+  CREATE TABLE IF NOT EXISTS destinations_user_game (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    publisher_id INTEGER NOT NULL,
+    game_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    data TEXT,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS user_game_pub_game_user_idx
+    ON destinations_user_game(publisher_id, game_id, username);
 `);
 
 export const db = drizzle(sqlite, { schema });
