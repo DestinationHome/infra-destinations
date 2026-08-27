@@ -3,7 +3,7 @@
   <h1>🧭 <code>infra-destinations</code> 📜</h1>
 
   <p>
-    <strong>Backend API service for the SCEA Destinations GDO platform (Quest Manager, Activity Board, Central Dispatch, and cross-game quest tracking) in PlayStation Home.</strong>
+    <strong>Backend API service for the SCEA Destinations platform in PlayStation Home &mdash; the GDO layer (Quest Manager, Activity Board, Central Dispatch, cross-game quest tracking) and Wardrobe Wars.</strong>
   </p>
 
   <p>
@@ -37,6 +37,8 @@
   - Central Dispatch (CDM) periodic player stats and quest synchronization handler.
 - [x] **Leaderboards (`/leaderboard/*`)**
   - Global and space leaderboards with ascending/descending sorting for race and activity times.
+- [x] **Wardrobe Wars (`/WardrobeWars/*`)** &mdash; VEEMEE's avatar fashion contest at the
+  SCEA Marketplace kiosk: entry photos, 1-10 voting, and the daily/weekly/monthly prize ladder.
 
 ## 🌠 Features
 
@@ -54,6 +56,24 @@ Route the following domains through your DNS / reverse proxy to this container (
 | Domain | Protocol | Purpose |
 | :--- | :--- | :--- |
 | `destinations.destinationhome.live` | HTTP | Destinations GDO endpoints (`/publisher/*`, `/user/space/*`, `/user/game/*`, `/user/group/*`, `/user/sync/*`, `/leaderboard/*`) |
+| `ww-prod.destinations.scea.com` | HTTP | Wardrobe Wars, unauthenticated calls (`podium.php`, `podium_score.php`, `screen.php`, `photo-p2.php`, `Images/*`) |
+| `ww-prod-sec.destinations.scea.com` | HTTPS | Wardrobe Wars, bracelet-authenticated calls (`verify.php`, `podium_vote.php`, `reward.php`, `photo-p1.php`) |
+
+> Both `ww-prod*` hostnames are hard-coded in the minigame object and must reach this
+> service. The HTTPS one needs a certificate chaining to a CA the Home client trusts.
+
+### Wardrobe Wars configuration
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `WW_PHOTO_ROOT` | `data/wardrobewars/photos` | Where submitted entry photos are stored, laid out as `<YYYY-MM-DD>/<psnid>-<HH-MM-SS>.dds` |
+| `WW_PRIZE_TILE_DIR` | `data/wardrobewars/prizes` | Prize thumbnails named `<OBJECT-GUID>.dds`; missing ones 404 |
+| `WW_SEED_DIR` | *(unset)* | Point at the CDN's `WardrobeWars/Images` tree to import the surviving 2012 entries and prize art on first run |
+| `WW_TIMEZONE` | `America/Los_Angeles` | Timezone the contest day/week/month boundaries are measured in |
+| `WW_THEMES` | *(built-in list)* | `\|`-separated themes, one per contest week |
+| `WW_MIN_VOTES_TO_WIN` | `1` | Votes an entry needs before it can win a period |
+| `WW_SHOWCASE_WHEN_EMPTY` | `true` | Show the most recent day's entries when today has none yet |
+| `WW_PODIUM_REFRESH` / `WW_SCREEN_DISPLAY` / `WW_KIOSK_SCORE_REFRESH` / `WW_PODIUM_SCORE_REFRESH` | `180` / `15` / `5` / `10` | Client-side timers, handed back by `verify.php` |
 
 ---
 

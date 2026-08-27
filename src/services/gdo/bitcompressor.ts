@@ -32,29 +32,21 @@ export const OBJECTIVE_BIT_INDEX: Record<string, number> = {
 export function compressObjectives(
   objectives: Record<string, number> | undefined,
 ): string {
-  if (!objectives || Object.keys(objectives).length === 0) {
-    return "0";
-  }
-
   let bits = 0n;
-  for (const [key, count] of Object.entries(objectives)) {
+  for (const [key, count] of Object.entries(objectives ?? {})) {
     if (count > 0 && OBJECTIVE_BIT_INDEX[key] !== undefined) {
       bits |= 1n << BigInt(OBJECTIVE_BIT_INDEX[key]);
     }
   }
 
-  return bits.toString();
+  return bits === 0n ? "" : bits.toString();
 }
 
 export function compressParts(
   parts: Record<string, number> | undefined,
 ): string {
-  if (!parts || Object.keys(parts).length === 0) {
-    return "0";
-  }
-
   let bits = 0n;
-  for (const [name, id] of Object.entries(parts)) {
+  for (const [name, id] of Object.entries(parts ?? {})) {
     const numId = Number(id);
     if (!Number.isFinite(numId) || numId <= 0) continue;
 
@@ -75,5 +67,5 @@ export function compressParts(
     }
   }
 
-  return bits.toString();
+  return bits === 0n ? "" : bits.toString();
 }

@@ -8,6 +8,7 @@ import { LogLayer } from "loglayer";
 import pino from "pino";
 import { serializeError } from "serialize-error";
 import { GdoService } from "./services/gdo/service";
+import { WardrobeWarsService } from "./services/wardrobewars/service";
 
 const app = new Hono();
 
@@ -21,7 +22,7 @@ app.use(async (c, next) => {
   await next();
 });
 
-const services = [new GdoService()];
+const services = [new GdoService(), new WardrobeWarsService()];
 
 // Logging
 export const log = new LogLayer({
@@ -47,10 +48,19 @@ for (const service of services) {
   service.registerRoutes(app);
 }
 
-// 404 fallback
+// Shared host: 404s break the Core Spaces teleport menu, so be optimistic.
+// DESTINATIONS_STRICT_404=1 to opt out.
+const STRICT_404 = ["1", "true", "on"].includes(
+  String(process.env.DESTINATIONS_STRICT_404 ?? "").toLowerCase(),
+);
+
 app.notFound((c) => {
-  log.warn(`[404] ${c.req.method} ${c.req.path}`);
-  return c.text("Not Found", 404);
+  if (STRICT_404) {
+    log.warn(`[404] ${c.req.method} ${c.req.path}`);
+    return c.text("Not Found", 404);
+  }
+  log.debug(`[destinations-list] passthrough ${c.req.method} ${c.req.path}`);
+  return c.text("OK", 200);
 });
 
 // Error handler

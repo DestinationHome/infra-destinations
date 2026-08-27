@@ -3,17 +3,21 @@ import { log } from "@main";
 import type { Context, Hono } from "hono";
 import { RCR_PUBLISHER_ID } from "../quests";
 import { getAllGameRecords } from "../store";
+import { fetchAllUserRecords } from "../upstream";
 
 export function leaderboardRoutes(app: Hono) {
   const handle = async (c: Context) => {
-    // /leaderboard/game/{gameId}/{period}/...
     const rawPath = c.req.path.replace(/^\/leaderboard\/?/, "");
     const parts = rawPath.split("/").filter(Boolean);
     const pubId = Number(RCR_PUBLISHER_ID);
-    const gameId = parts[1] || "12";
+    const gameId = parts[0] || "7";
+    const territory = parts[1] || "scea";
     const period = parts[2] || "allTime";
 
-    const records = await getAllGameRecords(pubId, gameId);
+    const remote = await fetchAllUserRecords();
+    const records = remote.length
+      ? remote
+      : await getAllGameRecords(pubId, gameId);
 
     const rows: { player: string; value: number }[] = [];
     for (const r of records) {
@@ -30,7 +34,9 @@ export function leaderboardRoutes(app: Hono) {
     }
     rows.sort((a, b) => a.value - b.value);
 
-    log.info(`[GDO] leaderboard game=${gameId} rows=${rows.length}`);
+    log.info(
+      `[GDO] leaderboard game=${gameId} territory=${territory} period=${period} rows=${rows.length}`,
+    );
 
     return apiXml(c, {
       destinations: {

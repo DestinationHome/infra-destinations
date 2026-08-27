@@ -4,6 +4,7 @@ import type { Context, Hono } from "hono";
 import { compressObjectives, compressParts } from "../bitcompressor";
 import { RCR_PUBLISHER_ID } from "../quests";
 import { getUserGameData, getUserObjectives } from "../store";
+import { fetchUserRecord } from "../upstream";
 
 export function parseUserGameUrl(rawPath: string) {
   const parts = rawPath
@@ -13,87 +14,48 @@ export function parseUserGameUrl(rawPath: string) {
 
   let pubId = Number(RCR_PUBLISHER_ID); // default 12
   let gameId = "7"; // default 7
-  let username = "user";
+  let username = "";
 
-  if (parts.includes("publisher")) {
-    const pIdx = parts.indexOf("publisher");
-    if (
-      pIdx !== -1 &&
-      parts[pIdx + 1] &&
-      !Number.isNaN(Number(parts[pIdx + 1]))
-    ) {
-      pubId = Number(parts[pIdx + 1]);
-    }
-  }
-  if (parts.includes("game")) {
-    const gIdx = parts.indexOf("game");
-    if (gIdx !== -1 && parts[gIdx + 1]) {
-      gameId = parts[gIdx + 1];
-    }
-  }
-  if (parts.includes("user")) {
-    const uIdx = parts.indexOf("user");
-    if (uIdx !== -1 && parts[uIdx + 1]) {
-      username = parts[uIdx + 1];
-    }
+  const after = (key: string): string | undefined => {
+    const i = parts.indexOf(key);
+    return i === -1 ? undefined : parts[i + 1];
+  };
+  const kwPub = after("publisher");
+  const kwGame = after("game");
+  const kwUser = after("user");
+  if (kwPub && !Number.isNaN(Number(kwPub))) pubId = Number(kwPub);
+  if (kwGame) gameId = kwGame;
+  if (kwUser) username = kwUser;
+
+  if (!username && parts.length >= 4) {
+    if (parts[0] && !Number.isNaN(Number(parts[0]))) pubId = Number(parts[0]);
+    if (parts[1]) gameId = parts[1];
+    username = parts[3] ?? "";
   }
 
-  // Positional fallback if no explicit keywords:
-  if (username === "user") {
-    // Find the username string (non-numeric, not a keyword, not a locale like en-GR)
-    for (let i = parts.length - 1; i >= 0; i--) {
-      const p = parts[i];
-      if (
-        p &&
-        Number.isNaN(Number(p)) &&
-        p !== "publisher" &&
-        p !== "game" &&
-        p !== "user" &&
-        !p.includes("-") &&
-        !p.includes("_") // unless it's a username like tony_greek
-      ) {
-        username = p;
-        break;
-      }
-      if (p?.includes("_") && !p.startsWith("heavywater")) {
-        username = p;
-        break;
-      }
-    }
-
-    const numericParts = parts.filter((p) => !Number.isNaN(Number(p)));
-    if (numericParts.length >= 2) {
-      if (numericParts.includes("12")) {
-        pubId = 12;
-        gameId = numericParts.find((p) => p !== "12") || "7";
-      } else {
-        pubId = Number(numericParts[0]);
-        gameId = numericParts[1] || "7";
-      }
-    } else if (numericParts.length === 1) {
-      gameId = numericParts[0];
-      pubId = Number(RCR_PUBLISHER_ID);
-    }
-  }
-
-  return { pubId, gameId, username };
+  return { pubId, gameId, username: username || "user" };
 }
 
 export function gameRoutes(app: Hono) {
   const handle = async (c: Context) => {
     const { pubId, gameId, username: user } = parseUserGameUrl(c.req.path);
 
-    const [gameRecord, objectives] = await Promise.all([
+    const [remote, localGame, localObjectives] = await Promise.all([
+      fetchUserRecord(user),
       getUserGameData(pubId, gameId, user),
       getUserObjectives(pubId, user),
     ]);
 
-    const times = gameRecord.times || {};
+    const times = remote?.times ?? localGame.times ?? {};
+    const parts = remote?.parts ?? localGame.parts;
+    const objectives = remote?.objectives ?? localObjectives;
+    const loadouts = remote?.loadouts ?? localGame.loadouts;
+
     const t1 = times["1"]?.time ?? -1;
     const t2 = times["2"]?.time ?? -1;
     const t3 = times["3"]?.time ?? -1;
 
-    const partsCompressed = compressParts(gameRecord.parts);
+    const partsCompressed = compressParts(parts);
     const objectivesCompressed = compressObjectives(objectives);
 
     log.info(
@@ -117,9 +79,9 @@ export function gameRoutes(app: Hono) {
               Track1_Times: t1,
               Track2_Times: t2,
               Track3_Times: t3,
-              Loadout1: (gameRecord.loadouts as any)?.["1"] || "AAAAAAAA",
-              Loadout2: (gameRecord.loadouts as any)?.["2"] || "AAAAAAAA",
-              Loadout3: (gameRecord.loadouts as any)?.["3"] || "AAAAAAAA",
+              Loadout1: loadouts?.["1"] || "AAAAAAAA",
+              Loadout2: loadouts?.["2"] || "AAAAAAAA",
+              Loadout3: loadouts?.["3"] || "AAAAAAAA",
               Parts: partsCompressed,
               Objectives: objectivesCompressed,
               Total_Time: 0,
