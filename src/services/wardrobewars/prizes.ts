@@ -1,16 +1,5 @@
 import data from "./prizes.json";
 
-/**
- * The 70 `Wardrobe Wars - ...` prize objects, loaded from `prizes.json` so the
- * tiers can be re-cut without touching code.
- *
- * Object IDs came from the live HCDB, so the client resolves every one to a
- * real name and description. Which tier an item sits in is a judgement call —
- * the retail schedule is not recoverable — so the split is by what the items
- * are: accessories to enter, garments to win a day, signature sets a week,
- * full costume bundles a month.
- */
-
 export interface Prize {
   /** HCDB object GUID, handed to `Rewards.AddTicket` on the client. */
   objectId: string;

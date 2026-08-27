@@ -1,16 +1,5 @@
 import type { Context } from "hono";
 
-/**
- * Body parsing for the PlayStation Home client.
- *
- * The PS3 sends well-formed `multipart/form-data` and
- * `application/x-www-form-urlencoded` — verified against captured traffic, so
- * `Request.formData()` does the actual parsing. This wrapper exists for one
- * reason the stock API cannot cover: the game is not internally consistent
- * about field case, sending `region` from `verify.php` and `Region` from the
- * photo endpoints, so lookups are case-insensitive.
- */
-
 export interface ClientFile {
   field: string;
   filename: string;
