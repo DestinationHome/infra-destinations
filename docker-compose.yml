@@ -9,6 +9,6 @@ services:
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://172.17.0.1:4318
       - PORT=3000
-      - HEAVYWATER_BASE_URL=${HEAVYWATER_BASE_URL:-http://www.services.heavyh2o.net}
+      - HEAVYWATER_BASE_URL=${HEAVYWATER_BASE_URL:-http://game-heavywater:3000}
     ports:
       - "30088:3000"
