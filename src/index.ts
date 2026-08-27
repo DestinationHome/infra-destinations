@@ -8,6 +8,7 @@ import { LogLayer } from "loglayer";
 import pino from "pino";
 import { serializeError } from "serialize-error";
 import { GdoService } from "./services/gdo/service";
+import { WardrobeWarsService } from "./services/wardrobewars/service";
 
 const app = new Hono();
 
@@ -21,7 +22,7 @@ app.use(async (c, next) => {
   await next();
 });
 
-const services = [new GdoService()];
+const services = [new GdoService(), new WardrobeWarsService()];
 
 // Logging
 export const log = new LogLayer({
@@ -47,10 +48,28 @@ for (const service of services) {
   service.registerRoutes(app);
 }
 
-// 404 fallback
+// Destinations LIST passthrough (was the 404 fallback).
+//
+// destinations.destinationhome.live is a SHARED host: besides the services
+// registered above, it is what the Core Spaces travel/teleport menu talks to.
+// The previous destinations-api deliberately answered 200 for everything it did
+// not implement, so an unhandled destinations-list call degraded quietly
+// instead of 404ing the menu. This restores that behaviour.
+//
+// Implemented as notFound rather than app.all("*") on purpose: notFound only
+// runs when no route matched at all, so it can never shadow a registered route.
+// Set DESTINATIONS_STRICT_404=1 to get real 404s back while debugging.
+const STRICT_404 = ["1", "true", "on"].includes(
+  String(process.env.DESTINATIONS_STRICT_404 ?? "").toLowerCase(),
+);
+
 app.notFound((c) => {
-  log.warn(`[404] ${c.req.method} ${c.req.path}`);
-  return c.text("Not Found", 404);
+  if (STRICT_404) {
+    log.warn(`[404] ${c.req.method} ${c.req.path}`);
+    return c.text("Not Found", 404);
+  }
+  log.debug(`[destinations-list] passthrough ${c.req.method} ${c.req.path}`);
+  return c.text("OK", 200);
 });
 
 // Error handler
