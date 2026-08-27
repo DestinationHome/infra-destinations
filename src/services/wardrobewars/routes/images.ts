@@ -1,6 +1,5 @@
 import { log } from "@main";
 import type { Context } from "hono";
-import { defaultPrizeTile } from "../dds";
 import {
   contentTypeFor,
   photoPathFor,
@@ -50,20 +49,20 @@ export async function imageHandler(c: Context) {
 }
 
 /**
- * A prize tile, falling back to a generated panel when no artwork has been
- * supplied for that object.
+ * A prize tile from `WW_PRIZE_TILE_DIR`, or a 404.
  *
- * The fallback is not cosmetic politeness: `WWScreen:RenderReward` builds the
- * texture URL unconditionally, so every advertised prize has to resolve to
- * something decodable or that slide renders broken.
+ * The service ships no artwork of its own. Only 13 of the 70 prizes kept their
+ * retail tile; the rest are recoverable from each prize object's catalogue
+ * render on the CDN and are expected to be dropped into this directory. A 404
+ * does not crash anything — `RenderReward` guards on `texture:IsLoaded()` — it
+ * just leaves the slide's backdrop empty.
  */
 async function servePrizeTile(c: Context, name: string) {
   const absolute = prizeTilePathFor(name);
-  if (absolute) {
-    const data = await readBlob(absolute);
-    if (data) return sendBinary(c, data, contentTypeFor(absolute));
-  }
-  return sendBinary(c, defaultPrizeTile(), "image/vnd-ms.dds");
+  if (!absolute) return c.body(null, 404);
+  const data = await readBlob(absolute);
+  if (!data) return c.body(null, 404);
+  return sendBinary(c, data, contentTypeFor(absolute));
 }
 
 /**

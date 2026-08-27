@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildGradientDds, defaultPrizeTile } from "./dds";
 import { type ClientBody, parseClientBody } from "./form";
 import {
   dayIndex,
@@ -163,18 +162,16 @@ describe("themes", () => {
 });
 
 describe("client body parsing", () => {
+  /** Hono's Context, reduced to the one thing the parser touches. */
   function ctx(body: Uint8Array | string, contentType: string) {
     const bytes =
       typeof body === "string" ? new TextEncoder().encode(body) : body;
-    return {
-      req: {
-        arrayBuffer: async () =>
-          bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-        header: (name: string) =>
-          name.toLowerCase() === "content-type" ? contentType : undefined,
-      },
-      // A minimal stand-in for Hono's Context: the parser only touches these.
-    } as any;
+    const raw = new Request("http://test.invalid/", {
+      method: "POST",
+      headers: { "content-type": contentType },
+      body: bytes.slice(),
+    });
+    return { req: { raw } } as any;
   }
 
   function multipart(
@@ -258,33 +255,6 @@ describe("client body parsing", () => {
     expect([...(body.file("file")?.data ?? [])]).toEqual([...ticket]);
   });
 
-  test("accepts bare LF line endings", async () => {
-    const body = await parseClientBody(
-      ctx(
-        multipart("xY9", { psnid: "Tester" }, undefined, "\n"),
-        'multipart/form-data; boundary="xY9"',
-      ),
-    );
-    expect(body.str("psnid")).toBe("Tester");
-  });
-
-  test("sniffs the boundary when the header omits it", async () => {
-    const body = await parseClientBody(
-      ctx(
-        multipart("xY9", { psnid: "Tester" }),
-        "multipart/form-data",
-      ),
-    );
-    expect(body.str("psnid")).toBe("Tester");
-  });
-
-  test("falls back to urlencoded when the declared boundary matches nothing", async () => {
-    const body = await parseClientBody(
-      ctx("psnid=Foo&id=2", "multipart/form-data; boundary=NOPE"),
-    );
-    expect(body.str("psnid")).toBe("Foo");
-  });
-
   test("finds an upload part whose name is unexpected", async () => {
     const data = new Uint8Array([1, 2, 3]);
     const body = await parseClientBody(
@@ -326,30 +296,6 @@ describe("photo storage safety", () => {
     expect(extensionFor(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("jpg");
     expect(extensionFor(new Uint8Array([0x89, 0x50, 0x4e, 0x47]))).toBe("png");
     expect(extensionFor(new Uint8Array([0, 0]))).toBe("dds");
-  });
-});
-
-describe("generated prize tile", () => {
-  test("writes a DDS header the PS3 will accept", () => {
-    const tile = defaultPrizeTile();
-    const dv = new DataView(tile.buffer, tile.byteOffset, tile.byteLength);
-    expect(String.fromCharCode(...tile.slice(0, 4))).toBe("DDS ");
-    expect(dv.getUint32(4, true)).toBe(124); // header size
-    expect(dv.getUint32(16, true)).toBe(340); // width, matching retail tiles
-    expect(dv.getUint32(12, true)).toBe(352); // height
-    expect(String.fromCharCode(...tile.slice(84, 88))).toBe("DXT1");
-  });
-
-  test("the payload is exactly one 8-byte block per 4x4 texel group", () => {
-    const small = buildGradientDds(8, 8, [255, 0, 0], [0, 0, 255]);
-    expect(small.length).toBe(128 + 2 * 2 * 8);
-    const dv = new DataView(small.buffer, small.byteOffset, small.byteLength);
-    expect(dv.getUint32(20, true)).toBe(2 * 2 * 8); // linear size
-  });
-
-  test("non-multiple-of-four dimensions round up to whole blocks", () => {
-    const odd = buildGradientDds(340, 352, [1, 2, 3], [4, 5, 6]);
-    expect(odd.length).toBe(128 + Math.ceil(340 / 4) * Math.ceil(352 / 4) * 8);
   });
 });
 

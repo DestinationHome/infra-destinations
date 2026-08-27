@@ -6,11 +6,8 @@ import { wwConfig } from "./config";
 /**
  * Entry-photo blob storage.
  *
- * Photos are laid out exactly the way the retail CDN did it —
- * `<YYYY-MM-DD>/<psnid>-<HH-MM-SS>.dds` — so the 2012 archive under
- * `dh.production/WardrobeWars/Images` can be dropped in as-is, and so anything
- * this service writes could be published back to that same CDN prefix later
- * without a rename.
+ * Laid out the way the retail CDN did — `<YYYY-MM-DD>/<psnid>-<HH-MM-SS>.dds` —
+ * so an archive of the original 2012 entries drops in unchanged.
  */
 
 const photoRoot = resolve(wwConfig.photoRoot);

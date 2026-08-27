@@ -48,17 +48,8 @@ for (const service of services) {
   service.registerRoutes(app);
 }
 
-// Destinations LIST passthrough (was the 404 fallback).
-//
-// destinations.destinationhome.live is a SHARED host: besides the services
-// registered above, it is what the Core Spaces travel/teleport menu talks to.
-// The previous destinations-api deliberately answered 200 for everything it did
-// not implement, so an unhandled destinations-list call degraded quietly
-// instead of 404ing the menu. This restores that behaviour.
-//
-// Implemented as notFound rather than app.all("*") on purpose: notFound only
-// runs when no route matched at all, so it can never shadow a registered route.
-// Set DESTINATIONS_STRICT_404=1 to get real 404s back while debugging.
+// Shared host: 404s break the Core Spaces teleport menu, so be optimistic.
+// DESTINATIONS_STRICT_404=1 to opt out.
 const STRICT_404 = ["1", "true", "on"].includes(
   String(process.env.DESTINATIONS_STRICT_404 ?? "").toLowerCase(),
 );

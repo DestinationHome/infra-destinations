@@ -1,7 +1,5 @@
 node_modules
 .env
-# Runtime state: the SQLite file plus the Wardrobe Wars photo and prize blobs.
-# Ignored wholesale — entry photos are player uploads and must never be committed.
 data/
 dist
 .DS_Store

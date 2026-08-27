@@ -37,12 +37,8 @@
   - Central Dispatch (CDM) periodic player stats and quest synchronization handler.
 - [x] **Leaderboards (`/leaderboard/*`)**
   - Global and space leaderboards with ascending/descending sorting for race and activity times.
-- [x] **Wardrobe Wars (`/WardrobeWars/*`)**
-  - VEEMEE's avatar fashion contest ("Fashion Battle"), played at the kiosk in the SCEA Marketplace.
-  - Session handshake, podium/kiosk entry selection, 1-10 voting, live score polling.
-  - Two-step photo upload from the scene script, with entry photos served back as DDS textures.
-  - Daily / weekly / monthly contest ladder, snapshotted winners, and prize-ticket grants
-    drawn from the 70 shipped `Wardrobe Wars - ...` objects.
+- [x] **Wardrobe Wars (`/WardrobeWars/*`)** &mdash; VEEMEE's avatar fashion contest at the
+  SCEA Marketplace kiosk: entry photos, 1-10 voting, and the daily/weekly/monthly prize ladder.
 
 ## 🌠 Features
 
@@ -63,20 +59,15 @@ Route the following domains through your DNS / reverse proxy to this container (
 | `ww-prod.destinations.scea.com` | HTTP | Wardrobe Wars, unauthenticated calls (`podium.php`, `podium_score.php`, `screen.php`, `photo-p2.php`, `Images/*`) |
 | `ww-prod-sec.destinations.scea.com` | HTTPS | Wardrobe Wars, bracelet-authenticated calls (`verify.php`, `podium_vote.php`, `reward.php`, `photo-p1.php`) |
 
-> The two `ww-prod*` hostnames are hard-coded in the shipped minigame object
-> (`528F6F64-A3684D21-9DAA4666-1CEB41DA`) and cannot be changed without repacking it,
-> which is why the endpoint names are still the retail `.php` ones. The client splits its
-> traffic across both hosts, so **both** must reach this service; the HTTPS one needs a
-> certificate chaining to a CA the Home client trusts.
+> Both `ww-prod*` hostnames are hard-coded in the minigame object and must reach this
+> service. The HTTPS one needs a certificate chaining to a CA the Home client trusts.
 
 ### Wardrobe Wars configuration
-
-All optional &mdash; the defaults work out of the box.
 
 | Variable | Default | Purpose |
 | :--- | :--- | :--- |
 | `WW_PHOTO_ROOT` | `data/wardrobewars/photos` | Where submitted entry photos are stored, laid out as `<YYYY-MM-DD>/<psnid>-<HH-MM-SS>.dds` |
-| `WW_PRIZE_TILE_DIR` | `data/wardrobewars/prizes` | Prize thumbnails named `<OBJECT-GUID>.dds`; missing ones fall back to a generated tile |
+| `WW_PRIZE_TILE_DIR` | `data/wardrobewars/prizes` | Prize thumbnails named `<OBJECT-GUID>.dds`; missing ones 404 |
 | `WW_SEED_DIR` | *(unset)* | Point at the CDN's `WardrobeWars/Images` tree to import the surviving 2012 entries and prize art on first run |
 | `WW_TIMEZONE` | `America/Los_Angeles` | Timezone the contest day/week/month boundaries are measured in |
 | `WW_THEMES` | *(built-in list)* | `\|`-separated themes, one per contest week |
